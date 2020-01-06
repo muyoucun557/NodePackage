@@ -1,0 +1,23 @@
+{
+  "name": "nodepackage",
+  "version": "1.0.0",
+  "description": "记录一些库的使用方法",
+  "main": "",
+  "dependencies": {
+    "hooks": "^0.3.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/muyoucun557/NodePackage.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/muyoucun557/NodePackage/issues"
+  },
+  "homepage": "https://github.com/muyoucun557/NodePackage#readme"
+}
