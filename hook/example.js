@@ -18,10 +18,11 @@ Document.pre('save', function validate(next) {
     next()
 });
 
-Document.post('save', function(next) {
-    console.log('post-save')
-    next()
-});
+// Document.post('save', function(next) {
+//     console.log('post-save')
+//     next()
+// });
 
 const doc = new Document()
 doc.save()
+console.log(1)
