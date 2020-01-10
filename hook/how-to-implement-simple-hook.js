@@ -26,12 +26,13 @@ Document.pre = function(methodName, hook) {
     const __pres = prototype.__pres;
 
     // 将method存储在__pres中
-    __pres[methodName] = method;
+    
 
     // 创造一个空间，存储hooks
     this.__lazyHooks(methodName);
     if (prototype.hooks[methodName].length == 0) {
         console.log(1)
+        __pres[methodName] = method;
         prototype[methodName] = function(...args) {
     
             const hooks = this.__proto__.hooks[methodName];
