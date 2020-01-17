@@ -4,6 +4,11 @@
 // 仅支持callback形式的hook
 // 语法案例可参看example.js
 
+// 原理：
+// 1. 将原方法存储在另外一个地方
+// 2. 将hooks存在在一个地方(pre-hooks和post-hooks)
+// 3. 重新定义原方法。重新定义中，要先调用pre-hooks,再调用原方法，最后调用post-hooks
+
 function Document() {};
 
 Document.prototype.save = function() {
@@ -21,49 +26,17 @@ Document.pre = function(methodName, hook) {
     if (typeof method !== 'function') {
         throw new TypeError(`${methodName} prop is not a function!`);
     }
-
-    prototype.__pres = prototype.__pres || {};
-    const __pres = prototype.__pres;
-
-    // 将method存储在__pres中
     
-
     // 创造一个空间，存储hooks
-    this.__lazyHooks(methodName);
-    if (prototype.hooks[methodName].length == 0) {
-        console.log(1)
-        __pres[methodName] = method;
-        prototype[methodName] = function(...args) {
+    this.__lazySetupHooks(methodName); 
     
-            const hooks = this.__proto__.hooks[methodName];
-            const self = this;
-            const length = hooks.length;
-    
-            dispatch(0);
-            
-            function dispatch(i) {
-                if (i == length) {
-                    // 已经将hooks全部执行完毕，接下来执行method即可
-                    self.__proto__.__pres[methodName](...args)
-                } else {
-                    // 调用下一个
-                    const hook = hooks[i];
-                    const next = dispatch.bind(null, i+1)
-                    hook(next)
-                }
-            }
-    
-        }
-    }    
-    
+    // 
     prototype.hooks[methodName].push(hook);
-
     return this;
 }
 
-Document.__lazyHooks = function(methodName) {
-    this.prototype.hooks = this.prototype.hooks || {};
-    this.prototype.hooks[methodName] = this.prototype.hooks[methodName] || []; 
+Document.__lazySetupHooks = function(proto, methodName) {
+    // 1. 原方法存储在proto.__pres中
 }
 
 Document.pre('save', function(next) {
