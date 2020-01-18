@@ -1,51 +1,106 @@
-// 针对类进行hook
-// 实现pre-hooks
-// 支持链式调用，多hook
-// 仅支持callback形式的hook
-// 语法案例可参看example.js
+const Hooks = {
+    pre: function(methodName, hook) {
+        const prototype = this.prototype;
+        const method = prototype[methodName];
+        if (!method) {
+            throw new Error(`${methodName} method not exist!`);
+        }
+    
+        if (typeof method !== 'function') {
+            throw new TypeError(`${methodName} prop is not a function!`);
+        }
+        
+        this._lazySetupHooks(prototype, methodName); 
+        
+        prototype.hooks.pre[methodName].push(hook);
+        return this;
+    },
+    post: function(methodName, hook) {
+        const prototype = this.prototype;
 
-// 原理：
-// 1. 将原方法存储在另外一个地方
-// 2. 将hooks存在在一个地方(pre-hooks和post-hooks)
-// 3. 重新定义原方法。重新定义中，要先调用pre-hooks,再调用原方法，最后调用post-hooks
+        const method = prototype[methodName];
+        if (!method) {
+            throw new Error(`${methodName} method not exist!`);
+        }
+    
+        if (typeof method !== 'function') {
+            throw new TypeError(`${methodName} prop is not a function!`);
+        }
+        
+        this._lazySetupHooks(prototype, methodName); 
+        
+        prototype.hooks.post[methodName].push(hook);
+        return this;
+    },
+    _lazySetupHooks: function(proto, methodName) {
+        proto.__pres = proto.__pres || {};
+
+        proto.hooks = proto.hooks || {};
+        proto.hooks.pre = proto.hooks.pre || {}
+        proto.hooks.pre[methodName] = proto.hooks.pre[methodName] || []
+        proto.hooks.post = proto.hooks.post || {}
+        proto.hooks.post[methodName] = proto.hooks.post[methodName] || []
+    
+    
+        if (!proto.__pres[methodName]) {
+            proto.__pres[methodName] = proto[methodName];
+    
+            proto[methodName] = function(...args) {
+                const self = this;
+                const preHooks = this.hooks.pre[methodName];
+                const postHooks = this.hooks.post[methodName];
+    
+                const total = preHooks.length + postHooks.length;
+    
+                function dispatch(i, ...args) {
+                    if (i < preHooks.length) {
+                        const next = dispatch.bind(null, i+1);
+                        const hook = preHooks[i];
+                        hook(next, ...args);
+                    } else if (i === preHooks.length) {
+                        self.__pres[methodName].apply(self, args);
+                        dispatch(i+1);
+                    } else if (i <= total) {
+                        const next = dispatch.bind(null, i+1);
+                        const hook = postHooks[i-preHooks.length-1];
+                        hook(next);
+                    }
+                }
+                dispatch(0, ...args);
+            }
+        }
+    }
+}
 
 function Document() {};
 
-Document.prototype.save = function() {
-    console.log(`call save`);
+for (let k in Hooks) {
+    Document[k] = Hooks[k];
 }
 
-Document.pre = function(methodName, hook) {
-    const prototype = Document.prototype;
-    // 1. 校验method是否存在于原型链上
-    const method = prototype[methodName];
-    if (!method) {
-        throw new Error(`${methodName} method not exist!`);
-    }
-
-    if (typeof method !== 'function') {
-        throw new TypeError(`${methodName} prop is not a function!`);
-    }
-    
-    // 创造一个空间，存储hooks
-    this.__lazySetupHooks(methodName); 
-    
-    // 
-    prototype.hooks[methodName].push(hook);
-    return this;
+Document.prototype.save = function(name) {
+    console.log(`call save, name : ${name}`);
 }
 
-Document.__lazySetupHooks = function(proto, methodName) {
-    // 1. 原方法存储在proto.__pres中
-}
 
-Document.pre('save', function(next) {
-    console.log(`I am first hook`);
-    next()
-}).pre('save', function(next) {
-    console.log(`I am second hook`);
-    next()
+Document.pre('save', function(next, name) {
+    console.log(`I am first pre hook, name : ${name}`);
+    next('bob')
+}).pre('save', function(next, name) {
+    console.log(`I am second pre hook, name : ${name}`);
+    next('chris')
+}).post('save', function(next) {
+    console.log(`I am first post hook`)
+    next();
+}).post('save', function(next) {
+    console.log(`I am second post hook`)
+    next();
 });
 
-const doc = new Document();
-doc.save();
+const doc =  new Document();
+doc.save('alice');
+
+
+// hooks 基于代理模式
+// 预处理，后处理。通过next来传递参数。通过next传递参数，第一个预处理传递给第二个预处理...传递到原方法
+
